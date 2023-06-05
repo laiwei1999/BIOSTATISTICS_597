@@ -1,0 +1,107 @@
+---
+title: "Final Project"
+author: "Lai Wei"
+date: "2022-12-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readxl)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import Dat
+
+```{r cars}
+life_exp <- read.csv("Life_Expectancy_00_15.csv")
+life_exp
+```
+##Average Life Expactancy
+
+Group by years
+```{r}
+life_year <- life_exp[c(2,5:17)] %>% 
+  group_by(Year) %>% 
+  summarize_all(mean, na.rm = TRUE) %>% 
+  arrange(desc(Life.Expectancy))
+
+life_year
+```
+
+```{r pressure, echo=FALSE}
+life_year %>% 
+  ggplot(aes(x = Year, y = Life.Expectancy)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "In 2000 to 2015, human life expectancy keeps increasing.")
+```
+
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = Population)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "The population keeps growing larger and larger.")
+```
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = CO2.emissions)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "The CO2 emissions went up at first, and when reach out around 2008, it started going down.")
+```
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = Health.expenditure)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "The health expenditure grows slowly")
+```
+
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = Electric.power.consumption)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "The electric power consumption met a turning point in growth in 2009, and it almost mentain a stable level at 5.2 kWh/captita.")
+```
+
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = Forest.area)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "The forest area keeps decreasing from the most, 3.862% of land area in 2000, to 30.233% of land area in 2015.")
+```
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = GDP.per.capita)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "GDP continues to grow")
+```
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = Individuals.using.the.Internet)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "The percentage of individuals using the Internet of population got developed largely")
+```
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = Military.expenditure)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "The percentage of military expenditure of GDP shows a curve around 2005 to 2012.")
+```
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = People.using.at.least.basic.drinking.water.services)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "The percentage of people using at least basic drinking water services of population continues to grow.")
+```
+
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = Obesity.among.adults)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "The problem centers on North America, North Africa and Oceania")
+```
+```{r}
+life_year %>% 
+  ggplot(aes(x = Year, y = Beer.consumption.per.capita)) + geom_point() +
+  geom_line() + geom_smooth(color = "blue") + 
+  labs(caption = "Average annual per capita beer consumption, measured in liters of pure alcohol.")
+```
