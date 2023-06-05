@@ -1,0 +1,108 @@
+---
+title: 'HW3 intermediate R'
+output:
+  pdf_document: default
+  html_document:
+    keep_md: yes
+---
+To hand in: Rmd and knitted pdf with the answers to the exercises.
+
+Full score = 30 points + 6 overall points
+
+
+# Introduction
+HW3 continues with the data set from HW1, the functions for logit-transformations, and the `logit_min001`-transformed `Median` values. Those are included below. 
+
+```{r setup, include = TRUE}
+library(tidyverse)
+library(readxl)
+library(modelr)
+library(broom)
+library(gghighlight)
+```
+
+```{r, include = TRUE}
+est0 <- read_excel("Table_Model-based_estimates_Countries_2019.xlsx", 
+                   skip = 4, sheet = "FP Indicators")
+
+logit <- function(x){
+  log(x/(1-x))
+}
+
+logit_min001 <- function(x){
+  ifelse(x < 0.01, logit(0.01), logit(x))
+}
+
+est <- 
+  est0 %>%
+  rename(iso = "ISO code", bounds = "Median estimate and uncertainty intervals",
+         mar = "Marital status", country = "Country or area") %>%
+  filter(Indicator == "CPmod",  mar == "MW") %>%
+  pivot_wider(names_from = bounds, values_from = Percentage) %>%
+  mutate(logit_cp = logit_min001(Median/100))
+
+est
+```
+
+# Question 1 (10 pts)
+For all countries, plot `logit_min001`-transformed `Median` (the `logit_cp` as above) against time. Facet wrap by the value of `Median` in the year 2030, with `high` defined as countries with prevalence greater than 50\%, `low` otherwise. The example plot is shown below.
+
+Tip: check Biostats 597D intro2R if you need some inspiration on how to categorize the countries.
+
+```{r, include = TRUE}
+my_plot_est <- est %>% 
+  group_by(country) %>% 
+  mutate("type" = ifelse((Median[Year%in%2030] > 50),"high","low")) %>%
+  ggplot(mapping = aes(x = Year, y = logit_cp, group = country)) + geom_line() + facet_wrap(~type)
+my_plot_est
+```
+
+# Question 2 (10 pts)
+For the United States of America, plot `logit_min001`-transformed `Median` (the `logit_cp` as above) over time and add a fitted regression line based on a linear regression model with the `logit_min001`-transformed `Median` as outcome variance, and predictor Year. Also plot the residuals of that model over time. Example plots are as follows:
+
+```{r, include = TRUE}
+my_plot <- est %>% 
+  filter(country == "United States of America")
+
+my_plot_2 <- my_plot %>% lm(logit_cp~Year,data = .) %>% augment()
+
+ggplot(data = my_plot_2, mapping = aes(x = Year,y = logit_cp)) +      geom_point() + ggtitle("United State of America") + 
+  geom_line(mapping = aes(x = Year, y = .fitted), color = "blue")
+  
+```
+
+
+```{r, include = TRUE}
+my_resid_plotest <- my_plot_2 
+ggplot(data = my_resid_plotest, mapping = aes(x = Year, y = .resid)) + geom_point() + ggtitle("United State of America") + ylab("Residuals")
+  
+```
+
+
+# Question 3(10 pts)
+Fit a regression model to the data in each country and obtain the residuals. Then make the plot below that shows the residuals over time for each country in the data set. 
+
+Tips: You can write your own for-loop if you want to practice more with the material you learned so far. Or you can consider using `group_by()` and `do()`, as explained in the first part of the optional Modeling lecture slides ("3 modeling2_optional.pdf") on Google Drive. 
+
+
+```{r, include = TRUE}
+my_plot_all <- est %>% group_by(country) %>% 
+  do(lm(logit_cp~Year,data = .) %>% augment())
+ggplot(data = my_plot_all)+
+  geom_line(aes(Year,.resid,group = country),alpha = 0.2)
+```
+
+
+Extra credit (5 pts): highlight the USA in blue
+
+```{r, include = TRUE}
+my_plot_all_2 <- ggplot(data = my_plot_all)+
+  geom_line(aes(Year,.resid,group = country),alpha = 0.2)+
+  gghighlight(country == "United State of America")
+my_plot_all_2
+```
+
+
+
+
+

@@ -1,0 +1,150 @@
+---
+title: 'HW1 intermediate R'
+output:
+  pdf_document: default
+  html_document:
+    keep_md: yes
+---
+To hand in: Rmd and knitted pdf with the answers to the exercises, including the functions used and the function calls that reproduce the output as included in this pdf. 
+collaborator: group 2
+
+```{r setup, include = FALSE}
+library(tidyverse)
+library(readxl)
+library("ggplot2")
+knitr::opts_chunk$set(include = TRUE) 
+```
+
+# Question 1 [10pts]
+Write a function called `logit()` that takes in a vector x and returns for each value prop in x, logit(prop), defined as log(prop/(1-prop)). To avoid problems with zero, extend it into a function `logit_min001()` that returns max(logit(0.01), logit(prop)) for each value in x. Example output is given below.
+
+Hints:
+- Note that max(some numeric vector or value, some other numeric vector or value) returns just one value, so max(logit(0.01), logit(x)) won't work to get the max for each value in x. Instead, consider using `ifelse()` to practice with conditional statements. (you can also use `pmax()` here but again, good to practice with conditional statements).
+
+```{r}
+logit <- function(x){
+  log(x/(1-x))
+}
+logit_min001 <- function(x){
+  ifelse(x == 0, logit(0.01),logit(x))
+}
+```
+
+```{r}
+logit(x = c(0, 0.005, 0.01, 0.2))
+logit_min001(x = c(0, 0.005, 0.01, 0.2))
+```
+
+
+# Question 2  [10pts, plus 5 pts extra credit]
+Table_Model-based_estimates_Countries_2019.xlsx contains estimates of modern contraceptive use (mCPR) among married women in the sheet "FP Indicators", with variables
+
+  - "ISO code" = country iso code 
+  - "Median estimate and uncertainty intervals": indicates what estimate is contained in the row with "Median" referring to point estimates and "U95" and "L95" referring to upper and lower bounds of 95% uncertainty intervals, respectively. 
+  - Indicator == "CPmod" gives mCPR.
+  - "Marital status" == "MW" gives the married women. 
+  - Year = the reference year that the estimate refers to. 
+  - Percentage = the value for the iso-year-indicator-status combination 
+
+
+Write code to produce the plot below, which shows mCPR (%) among married women against time in Afghanistan (country iso code 4), lines are median estimates.
+
+Notes:
+
+- For reading in the excel file, consider using the read_excel function from the readxl package, see hw3 in intro R if you need an example. 
+-  Estimates on family planning were obtained from the UN Population Division at
+https://www.un.org/en/development/desa/population/theme/family-planning/cp_model.asp.
+
+#Import data
+```{r}
+
+Table_2019 <- read_excel("D:/Umass Amherst/BIOSTATS 597E/HW/Table_Model-based_estimates_Countries_2019.xlsx",
+                         sheet = 3, skip = 4)
+View(Table_2019)
+
+```
+
+#Create a graph
+```{r}
+Table_2019 %>% 
+  filter(`ISO code`== 4, `Marital status` == "MW",`Median estimate and uncertainty intervals` == "Median",Indicator == "CPmod") %>% 
+  ggplot(mapping = aes(x = Year, y = Percentage))+
+  geom_smooth(stat="identity",color = "black")
+
+```
+\newpage
+
+## Extra credit [5 points]
+
+Write code to produce the second plot where the shaded areas represent 95% uncertainty intervals.
+
+Notes:
+
+- Note that this extra credit exercise is based on intro2R material (practice makes perfect!). In your teams, I recommend that you focus class time on finishing all exercises, and only attempt the extra credit one as time allows. 
+- Consider using pivot_longer or pivot_wider to work with the point estimates and bounds for the estimates. and consider `geom_smooth()' with argument stat = "identity" for plotting the bounds. 
+
+```{r}
+
+Table_2019 %>% 
+  filter(`ISO code` == 4,`Marital status` == "MW",`Median estimate and uncertainty intervals` == "Median",Indicator == "CPmod") %>% 
+  ggplot(mapping = aes(x = Year, y = Percentage))+
+  geom_smooth(stat = "identity")
+     
+```
+
+\newpage
+
+# Question 3 [10 pts]
+Turn relevant code from exercise 2 into a function `plot_cp()` with inputs
+
+- est: tibble with info on estimates, based on your earlier processing of the input file, and 
+- iso_code
+
+to produce the same plot for Afghanistan (iso_code 4) as well as a plot for Kenya (iso_code 404), see function calls below (shown for plots based on extra credit question in 2, doing this for the simpler plot is fine). Note that the function does NOT have to contain all processing done in the previous exercise; you can choose what info is most convenient to store in "est".
+
+```{r}
+plot_cp <- function(Table_2019, iso_code){
+   Table_2019 %>% 
+  filter(`ISO code` == iso_code,`Marital status` == "MW",`Median estimate and uncertainty intervals` == "Median",Indicator == "CPmod") %>% 
+  ggplot(mapping = aes(x = Year, y = Percentage))+ 
+  geom_smooth(stat = "identity", method = "lm",se = TRUE)+
+    ggtitle(Table_2019$`Country or area`[1])+
+    xlab("Time")+ylab("Modern use(%)")
+}
+```
+
+```{r}
+plot_cp(Table_2019, iso_code = 4)
+plot_cp(Table_2019, iso_code = 404)
+```
+
+# Question 4 [10pts]
+Extend the function in question 3 with an argument "logit_scale" which defaults to FALSE. If set to true, the y-axis is logit transformed (based on percentage/100) using the logit_min001 function from Q1, as in example below.
+
+```{r}
+
+
+plot_cp <- function(Table_2019, iso_code,logit_scale = FALSE){
+  #Table_2019 %>% 
+    #filter(`ISO code` == iso_code,`Marital status` == "MW",`Median estimate and uncertainty intervals` == "Median",Indicator == "CPmod") %>% 
+      if(logit_scale == TRUE){Table_2019 %>% 
+          filter(`ISO code` == iso_code,`Marital status` == "MW",`Median estimate and uncertainty intervals` == "Median",Indicator == "CPmod") %>% 
+          ggplot(mapping = aes(x = Year, y = logit_min001(Percentage/100)))+
+          geom_smooth(stat = "identity", method = "lm",se = TRUE)+
+          ggtitle(Table_2019$`Country or area`[1])+
+          xlab("Time")+ylab("logit(Modern use)")} 
+    else{Table_2019 %>% 
+        filter(`ISO code` == iso_code,`Marital status` == "MW",`Median estimate and uncertainty intervals` == "Median",Indicator == "CPmod") %>% 
+          ggplot(mapping = aes(x = Year, y = Percentage))+ 
+  geom_smooth(stat = "identity", method = "lm",se = TRUE)+
+    ggtitle(Table_2019$`Country or area`[1])+
+    xlab("Time")+ylab("Modern use(%)")}
+}
+```
+
+```{r}
+plot_cp(Table_2019, iso_code = 4)
+plot_cp(Table_2019, iso_code = 4, logit_scale = TRUE)
+```
+
+

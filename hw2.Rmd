@@ -1,0 +1,175 @@
+---
+title: "Homework 2"
+author: "Lai Wei"
+output: pdf_document
+---
+
+The goal of this homework is for you to gain more practice with lists, iteration, and functions. 
+
+The `grady_augmented` dataset in the `lexicon` R package is a character vector containing 122806 common words in the English language. You'll be counting English language letter percentages in a random subset of the words in the `grady_augmented` vector.
+
+```{R setup}
+library(tidyverse)
+#install.packages("lexicon")
+library(lexicon)
+library(readxl)
+```
+
+We begin with code to sample 10000 words at random from the vector and name the set of words as `sample_words`.
+
+```{R}
+set.seed(597)
+indices = sample(seq_along(grady_augmented),size=10000,replace=F)
+sample_words = grady_augmented[indices]
+```
+
+Next, we will use the `str_split` function to split each sample word into its individual letters. 
+
+```{R}
+split_words <- str_split(sample_words,"")
+```
+
+## Question 1. [5 points]
+
+Write a function `count_letter` that counts how many times a letter appears in an input character vector of letters.
+
+```{R}
+count_letter <- function(x,letter){
+  nletter = 0
+  for(index in 1:length(x)){
+    if(x[index] == letter){
+      nletter = nletter + 1
+    }
+  }
+    return(nletter)
+}
+```
+
+Test it out:
+
+```{R}
+my_word <- str_split("intermediate", pattern = "")[[1]]
+count_letter(my_word,"e")
+count_letter(my_word,"m")
+count_letter(my_word,"q")
+```
+
+```{R}
+surprise_word = str_split("halloween", pattern = "")[[1]]
+surprise_letter = "l"
+count_letter(surprise_word, surprise_letter)
+```
+
+## Question 2: [15 pts; 5 pts each part]
+
+(a). Use your function from Question 1 in `for` loop to calculate and output the number of "e"s in each of the 10,000 words in your sample (`sample_words`). (Note: please use a `for` loop here rather than `map` or `lapply` - we can compare with those later!)
+
+Tip 1: Using your results from the chunk above.
+
+Tip 2:Try your `for` loop for a small number first, such as the first 3 words.
+
+Tip 3. The example output is as below:
+
+<!--![](hw2_fig1.png)-->
+
+```{R}
+e_count <- rep(NA,length(sample_words))
+for (index in 1:length(split_words)){
+  my_word <- split_words[[index]]
+  e_count[index] <- count_letter(my_word,"e")
+}
+table(e_count)
+```
+
+(b). Calculate and output the total number of letters in `sample_words`. (i.e., get just one number in your output).
+
+Tip: the output should be "[1] 78861".
+
+```{R}
+n_letter = 0
+for (index in seq_along(split_words)){
+  my_word <- split_words[[index]]
+  n_letter <- n_letter + length(my_word)
+}
+n_letter
+```
+
+(c). Use your results from (a) with your results from (b) to calculate and output the percentage of the letter "e" in `sample_words`.
+
+Tip: the output should be "[1] 0.1189688".
+
+```{R}
+eletter = 0
+for (index in seq_along(split_words)){
+  my_word <- split_words[[index]]
+  eletter <- eletter + count_letter(my_word,"e")
+}
+eletter/n_letter
+```
+
+## Question 3: [15 pts; 5 pts each part] 
+
+Calculate the percentage for every letter of the English alphabet as follows:
+
+(a) Write a function `calc_percent` based on your answers to Question 2 that takes a list of words (after `str_split` is applied) and a letter as input and outputs its frequency. Calculate and output the percentage of the letter "r" on the list: ("intermediate","statistical", "programming")
+
+```{r}
+rcourse_words<-list("intermediate","statistical", "programming")
+rcourse_split_words <- str_split(rcourse_words,"")
+```
+
+```{R}
+calc_percent <- function(my_split_words, letter){
+  nletter = 0
+  n_words = 0
+  for (index in seq_along(rcourse_split_words)){
+    #my_split_words <- rcourse_split_words
+    my_word <- rcourse_split_words[[index]]
+    nletter <- nletter + count_letter(my_word,letter)
+  }
+  for (index in seq_along(rcourse_split_words)) {
+    my_word <- rcourse_split_words[[index]]
+    n_words = n_words + length(my_word)
+  }
+  nletter/n_words
+}
+calc_percent(rcourse_split_words, "r")
+```
+
+(b) Use your function from Question 3a in a `for` loop to calculate and output the percentage for every letter of the alphabet in `sample_words`. Hint: the vector `letters` is a built-in vector in R. Type `?letters` in your console to see what it contains.
+
+```{r}
+letter_count <- rep(NA,length(letters))
+  for (i in seq_along(letters)){
+    nletter = 0
+    for (k in seq_along(split_words)){
+      my_word <- split_words[[k]]
+      nletter <- nletter + count_letter(my_word,letters[[i]])
+      letter_count[i] <- nletter/n_letter 
+    }
+  }
+table(letter_count) 
+```
+
+(c) Output your results from (b) in a nicely formatted table where one column is the letter and the second column is the percentage Do this using the `knitr::kable()` function. (You will need to look this up, but it shouldn't be too hard. If you are stuck, ask for help.)
+
+To help you make sure you are on the right track, the first five rows are shown below.
+
+<!--![](hw2_fig2.png)-->
+```{r}
+knitr::kable(letter_count,col.names = "Percentage")
+```
+
+## Extra Credit: [Up to 10 pts; max for assignment is 100%]
+
+How do these letter percentages compare to what's presented on Wikipedia for the English language? What about other languages? The file `wikipedia_letter_percentages.xlsx` contains the percentages, found on https://en.wikipedia.org/wiki/Letter_frequency.  
+
+(a) [5 pts] Plot the letter percentages you calculated above along with the Wikipedia percentages for the English language. 
+```{r}
+wikipedia_letter_percentages <- read_excel("wikipedia_letter_percentages.xlsx")
+```
+
+(b) [5 pts] Make a similar plot for a non-English language of your choice.
+```{r}
+
+```
