@@ -1,0 +1,86 @@
+---
+title: "HW1 solutions"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+
+We will use data from the gapminder package, let’s load it.
+```{r}
+#install.packages("tidyverse")
+library(tidyverse)
+```
+
+```{r}
+#install.packages("gapminder")
+library(gapminder)
+```
+
+A look at the data:
+```{r}
+gapminder
+```
+
+Subsetting the data to include countries in Africa only (used in later exercises)
+```{r}
+dat_africa <- filter(gapminder, continent == "Africa")
+```
+
+A simple base R plot of life expectancy against log(GDP):
+```{r}
+plot(lifeExp ~ log10(gdpPercap), data = gapminder)
+```
+
+Warm up exercise to start with in teams:
+Use ggplot2 functions to make a graph as the one above, so with
+• Life expectancy on the y-axis
+• log10(GDP per capita) on the x-axis
+```{r}
+ggplot(data = dat_africa,aes(x=log10(gdpPercap), y=lifeExp)) +
+geom_point()
+```
+
+# HW exercises: 
+Use ggplot2 functions to make the graphs requested in (1) and (2) and (3). Throughout, avoid repetition of code.
+
+
+1. Make a scatter plot using ggplot with
+- Life expectancy on the y-axis, label axis as ``Life expectancy''
+- GDP per capita on the x-axis, use a log10-transform of the x-axis while still displaying the (unlogged) GDP values (hint: use Google to figure out how to do this)
+- shapes to indicate the continent, add a legend
+- color to indicate the year, do NOT add a legend for that (hint: first add it with legend, then use the help function to figure out how to remove the legend)
+
+```{r}
+ggplot(data=gapminder, aes(x=gdpPercap, y=lifeExp,shape=continent,color=year)) + 
+geom_point() +
+scale_x_log10() +
+ylab("Life Expectancy") +
+guides(color="none")
+```
+
+
+2. Add two geom_smooth layers (a) and (b) to the plot you made in (1) where
+(a) is fitted to the entire dataset and uses default settings for the smoother used and plotting settings
+(b) is fitted to data in Africa only, is plotted in red (both point estimates as well as confidence interval), and is transparent (so if it overlaps with (a), (a) is still visible). 
+Hint: to fit to data in Africa only, consider using "data = filter(gapminder, contient=="africa")"
+```{r}
+ggplot(data=gapminder, aes(x=gdpPercap, y=lifeExp)) + 
+geom_point(aes(shape=continent, color=year)) +
+scale_x_log10() +
+ylab("Life Expectancy") +
+guides(color="none") +
+geom_smooth() +
+geom_smooth(data = filter(gapminder, continent == "Africa"), alpha = 0.2, color = "red", fill = "red") 
+```
+
+Note that alpha can be adjusted and need not be to exactly 0.2.
+
+3. Using the data for countries in Africa only, plot life expectancy over time and connect country data points such that the plot shows one line for each country. 
+An example result plot is displayed below in the knitted HW file.
+```{r}
+ggplot(data=dat_africa,aes(x=year,y=lifeExp,color=country)) + geom_point() +
+geom_line() +
+guides(color="none")
+```

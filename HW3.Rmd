@@ -1,0 +1,144 @@
+---
+title: "HW3: Summarizing and Visualizing Demographic Estimates"
+output:
+  pdf_document:
+    df_print: paged
+---
+
+- What to hand in: Notebook .Rmd file and knitted pdf with your answers (you can use this one as a template). 
+- When: Wednesday, 10/5. 
+- How: On Moodle, hw submission link is under "3. Tidy data".
+- Extra credits: 1 additional extra credit question (within question 1) that is worth 10 points. Note that the max score of question 1-2 is 80 points, i.e. extra credit are not added when you are already at full score. 
+- Goals of this HW: gain experience with loading data from Excel files and rearranging data into tidy format; reinforce your dplyr and ggplot skills.
+
+
+We will work with data from the UN World Population Prospects (downloaded here https://population.un.org/wpp/) on the 
+
+ - Total fertility rate (TFR) from "WPP2019_FERT_F04_TOTAL_FERTILITY.xlsx" which informally refers to the average number of children per woman. 
+The official interpretation is as follows ``The average number of live births a hypothetical cohort of women would have at the end of their reproductive period if they were subject during their whole lives to the fertility rates of a given period and if they were not subject to mortality. It is expressed as live births per woman.''
+ - Sex ratio at birth (SRB) from "WPP2019_FERT_F02_SEX_RATIO_AT_BIRTH.xlsx", the number of male births per 1 female birth.
+
+Relevant info in both data sets is as follows:
+
+ - Our estimates of interest are stored on the sheet ESTIMATES.
+ - Rows refer to countries as well as other geographical regions. we will focus on countries only, which are defined as rows with the column Type being Country/Area.
+ - Columns indicated by periods, i.e. "2015-2020", include the estimate for that period and area
+ - Parent code indicates the geographical region that the country belongs too
+
+ 
+We use read_excel from readxl package to read the data. 
+Detailed instructions are given for the TFR data. You can add your own code to read the SBR data set.
+
+# Reading data
+```{r setup}
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(stringr)
+library(rmarkdown)
+```
+
+Read the TFR data, using arguments skip and sheet to get the relevant info
+```{r}
+dat_dontuse <- read_excel("WPP2019_FERT_F04_TOTAL_FERTILITY.xlsx",
+  skip = 16, sheet = "ESTIMATES"
+)
+```
+
+Note that you can check the data types per column using glimpse
+```{r}
+glimpse(dat_dontuse)
+```
+
+We can see that the TFR estimates for the periods are stored as character strings while we want numeric values. This is due to the usage of "..." for missing values. If you specify this use of "..." for NAs, you see that the TFR values are indeed stored as numeric (see below).
+```{r}
+dat <- read_excel("WPP2019_FERT_F04_TOTAL_FERTILITY.xlsx",
+  skip = 16, sheet = "ESTIMATES", na = "..."
+)
+glimpse(dat)
+```
+
+
+For you to do: Read in the SBR data set
+```{r}
+# read sbr data set
+dat_sex <- read_excel("WPP2019_FERT_F02_SEX_RATIO_AT_BIRTH.xlsx",
+  skip = 16, sheet = "ESTIMATES", na = "..."
+)
+glimpse(dat_sex)
+```
+
+
+# HW exercises: 
+
+Hints/advice:
+
+ - Note that the exercises do not specify the steps involved to get to the end result, this is for you to figure out. Try writing it out for yourself first before you start coding. 
+ - You may want to rename some columns to make it easier to work with. I.e.
+rename(parent_code = "Parent code")
+may make it easier to use that variable later on. 
+
+
+## 1. Graph (40 pts, extra credit 10 pts)
+Make the graph below which shows TFR estimates against time for 
+
+ - subset of countries in Middle and South Africa (with parent code 911 or 913), 
+ 
+ including those that are either 
+ 
+ - high fertility countries with a TFR $>$ 5 in 2015-2020
+ 
+ OR 
+ 
+ - fast decline countries, here defined as countries with a change greater than 3 over the time period from "1950-1955" to "2015-2020". 
+
+Notes: 
+
+- No points subtracted if your order of countries in the legend is different, as long as the countries are labeled correctly.  
+- If you are not able to produce exactly this plot, partial credit will be given to a plot with all countries in these subregions, and/or the construction of a tibble with the required selection of countries.  
+- Use the midpoints of the period for plotting, given by startyear + 2.5, as shown in the example graph. To do so, consider using ``str_sub()`` to extract the first 4 characters from the period, which is the startyear, to then make that string numeric using ``as.numeric()``, and add 2.5.
+
+<!--![Example plot for exercise 2.](hw3_fig1.png)-->
+```{r}
+
+data_Q1 <- filter(dat, `Parent code` == 911 | `Parent code` == 913, dat[,21] > 5|dat[,8] - dat[,21] > 3) %>% 
+  pivot_longer("1950-1955":"2015-2020",names_to = "period", values_to = "tfr")
+colnames(data_Q1)[3] = "Country" 
+data_Q1 <- data_Q1 %>%   
+  group_by(Country)%>%
+  # mutate(Category = ifelse(select(period,`2015-2020`) > 5), "high fertility", "fast decline") 
+mutate(Category = ifelse(tfr[period =="2015-2020"]>5, "high fertility", "fast decline") ) %>% 
+  mutate(year = str_sub(period, start = 1, end = 4)) %>%
+  mutate(year = as.numeric(year) + 2.5)  
+  
+ggplot(data = data_Q1, aes(x = year,y = tfr))+
+  geom_point(aes(x = year,y = tfr,shape = Category, color = Country))+ 
+  geom_line(aes(group = Country, color = Country)) +
+  xlab("year") + ylab("tfr") +
+  guides(shape = guide_legend(order = 1))
+  scale_shape_manual = c(1,2)
+```
+**Extra credit** (10 pts): 
+Reconstruct the same plot but redefine the fast decline countries to be those countries with a change greater than 3 from the maximum TFR over the entire set of periods to the TFR in the most recent period 2015-2020.
+
+
+## 2. Findings for 2015-2020 (40 pts)
+For the period 2015-2020, obtain the set of countries (not regions) with SRB $>$ 1.1. For those countries, calculate the "male TFR", which is given by TFR*SRB/(1+SRB). 
+
+To hand in: print a table with male TFR for 2015-2020 for the selected countries with SBR $>$ 1.1. 
+
+Note: for this question, you need to join the two data sets. Details on how to do this are shown in the "2c data wrangling 2.mp4" video.
+```{r}
+data_Q2 <- filter(dat_sex,`2015-2020` > 1.1) %>% 
+  slice(-c(3))
+
+data_tfr <- filter(dat,dat[3] == "China"|dat[3] == "Armenia"|dat[3] =="Azerbaijan"|dat[3] == "Viet Nam")
+
+data_Q2 <- cbind(data_Q2, data_tfr[21])
+colnames(data_Q2)[22] = "tfr"
+data_male_tfr <- data_Q2 %>%   
+  mutate(male_TFR = tfr*`2015-2020`/(1+`2015-2020`)) %>% 
+  select(`Region, subregion, country or area *`,male_TFR)
+
+```
+
